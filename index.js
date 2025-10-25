@@ -2364,18 +2364,42 @@ const HTML_PAGE = `
             document.querySelector('.main-content').scrollIntoView({ behavior: 'smooth' });
         });
 
-        // 生成预设背景音乐并混合
+        // 从网络获取预设背景音乐并混合
         async function mixWithPresetMusic(voiceBlob, musicType, musicVolume) {
             try {
+                // 更新加载状态
+                const loadingText = document.getElementById('loadingText');
+                loadingText.textContent = '正在下载背景音乐...';
+                
+                // 获取对应音乐类型的URL
+                const musicUrl = getBackgroundMusicUrl(musicType);
+                
+                // 尝试下载背景音乐
+                let musicBlob;
+                try {
+                    loadingText.textContent = '正在加载背景音乐...';
+                    const response = await fetch(musicUrl);
+                    if (!response.ok) {
+                        throw new Error('背景音乐下载失败: ' + response.status);
+                    }
+                    musicBlob = await response.blob();
+                } catch (error) {
+                    console.warn('无法从网络获取背景音乐，将使用备用方案:', error);
+                    // 如果网络获取失败，使用本地生成的简单音乐作为备用
+                    return await generateAndMixFallbackMusic(voiceBlob, musicType, musicVolume);
+                }
+                
                 // 创建音频上下文
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const audioContext = new AudioContext();
                 
+                loadingText.textContent = '正在处理音频...';
+                
                 // 解码语音音频
                 const voiceBuffer = await decodeAudioData(audioContext, voiceBlob);
                 
-                // 生成简单的背景音乐
-                const musicBuffer = generateBackgroundMusic(audioContext, voiceBuffer.length, voiceBuffer.sampleRate, musicType);
+                // 解码背景音乐
+                const musicBuffer = await decodeAudioData(audioContext, musicBlob);
                 
                 // 创建混合后的音频缓冲区
                 const mixBuffer = audioContext.createBuffer(
@@ -2390,8 +2414,10 @@ const HTML_PAGE = `
                 
                 // 混合音频，调整背景音乐音量
                 for (let i = 0; i < voiceBuffer.length; i++) {
-                    // 获取对应位置的音乐数据
-                    const musicSample = musicData[i] * musicVolume;
+                    // 获取对应位置的音乐数据，使用循环方式让音乐重复播放
+                    const musicIndex = Math.floor(i * musicBuffer.length / voiceBuffer.length);
+                    const musicSample = musicData[musicIndex] * musicVolume;
+                    
                     // 将语音和音乐混合，防止过度削波
                     mixData[i] = Math.min(Math.max(voiceData[i] * 0.8 + musicSample * 0.5, -1), 1);
                 }
@@ -2400,88 +2426,131 @@ const HTML_PAGE = `
                 const mixedBlob = await bufferToWave(mixBuffer, mixBuffer.length);
                 return mixedBlob;
             } catch (error) {
-                console.error('生成并混合背景音乐失败:', error);
+                console.error('下载并混合背景音乐失败:', error);
                 // 如果混合失败，返回原始语音
                 return voiceBlob;
             }
         }
         
-        // 根据音乐类型生成简单的背景音乐
-        function generateBackgroundMusic(audioContext, length, sampleRate, musicType) {
-            const buffer = audioContext.createBuffer(1, length, sampleRate);
+        // 获取背景音乐URL
+        function getBackgroundMusicUrl(musicType) {
+            // 使用GitHub Pages托管的免费音乐样本
+            // 这些是免版权的音乐片段，适合作为背景音乐
+            const baseUrl = 'https://cdn.freesound.org/previews';
+            
+            // 不同类型的背景音乐URL映射
+            const musicUrls = {
+                'music1': 'https://assets.mixkit.co/music/preview/mixkit-happy-bells-186.mp3', // 轻松愉快
+                'music2': 'https://assets.mixkit.co/music/preview/mixkit-soft-piano-133.mp3', // 安静优雅
+                'music3': 'https://assets.mixkit.co/music/preview/mixkit-epic-orchestral-moment-126.mp3', // 激情澎湃
+                'music4': 'https://assets.mixkit.co/music/preview/mixkit-soft-romantic-piano-90.mp3', // 温馨浪漫
+                'music5': 'https://assets.mixkit.co/music/preview/mixkit-tension-suspense-game-soundtrack-667.mp3' // 悬疑紧张
+            };
+            
+            return musicUrls[musicType] || musicUrls['music1']; // 默认返回第一个
+        }
+        
+        // 备用方案：生成简单的背景音乐（当网络音频获取失败时使用）
+        async function generateAndMixFallbackMusic(voiceBlob, musicType, musicVolume) {
+            const loadingText = document.getElementById('loadingText');
+            loadingText.textContent = '使用本地备用音乐...';
+            
+            // 创建音频上下文
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioContext = new AudioContext();
+            
+            // 解码语音音频
+            const voiceBuffer = await decodeAudioData(audioContext, voiceBlob);
+            
+            // 创建一个简单的音乐缓冲区
+            const buffer = audioContext.createBuffer(1, voiceBuffer.length, voiceBuffer.sampleRate);
             const channelData = buffer.getChannelData(0);
             
             // 根据音乐类型设置不同的参数
-            let noteSequence, tempo;
+            let baseFreq, patternLength, speed;
             
             switch(musicType) {
                 case 'music1': // 轻松愉快
-                    noteSequence = [0, 2, 4, 5, 4, 2, 0, 2]; // C大调简单旋律
-                    tempo = 1.0; // 速度
+                    baseFreq = 330; // E4
+                    patternLength = 8;
+                    speed = 2.0;
                     break;
                 case 'music2': // 安静优雅
-                    noteSequence = [0, 3, 5, 3, 0]; // 简单的缓慢旋律
-                    tempo = 0.5; // 较慢的速度
+                    baseFreq = 262; // C4
+                    patternLength = 4;
+                    speed = 0.8;
                     break;
                 case 'music3': // 激情澎湃
-                    noteSequence = [4, 5, 7, 9, 7, 5, 4]; // 上行旋律
-                    tempo = 1.5; // 较快的速度
+                    baseFreq = 392; // G4
+                    patternLength = 6;
+                    speed = 2.5;
                     break;
                 case 'music4': // 温馨浪漫
-                    noteSequence = [0, 4, 7, 12, 11, 9, 7, 4]; // 抒情旋律
-                    tempo = 0.7; // 中等速度
+                    baseFreq = 349; // F4
+                    patternLength = 8;
+                    speed = 1.2;
                     break;
                 case 'music5': // 悬疑紧张
-                    noteSequence = [0, 3, 7, 11, 10, 8, 5, 1]; // 不和谐旋律
-                    tempo = 1.2; // 较快的速度
+                    baseFreq = 294; // D4
+                    patternLength = 7;
+                    speed = 1.8;
                     break;
                 default:
-                    noteSequence = [0, 2, 4, 5]; // 默认简单旋律
-                    tempo = 1.0;
+                    baseFreq = 330;
+                    patternLength = 4;
+                    speed = 1.5;
             }
             
-            // 生成音乐数据
-            const samplesPerBeat = sampleRate / (4 * tempo); // 每拍的采样数
-            let noteIndex = 0;
-            let sampleIndex = 0;
+            // 生成更复杂一些的音调序列
+            const samplesPerBeat = buffer.sampleRate / (4 * speed);
             
-            while (sampleIndex < length) {
-                // 获取当前音符
-                const note = noteSequence[noteIndex % noteSequence.length];
+            for (let i = 0; i < buffer.length; i++) {
+                const beatPos = Math.floor(i / samplesPerBeat);
+                const notePos = beatPos % patternLength;
                 
-                // 将音符转换为频率（基于C4 = 261.63 Hz）
-                const frequency = 261.63 * Math.pow(2, note / 12);
-                
-                // 计算音符持续时间（约为一拍）
-                const noteDuration = Math.floor(samplesPerBeat);
-                const endIndex = Math.min(sampleIndex + noteDuration, length);
-                
-                // 生成正弦波
-                for (let i = sampleIndex; i < endIndex; i++) {
-                    // 音量包络线（淡入淡出）
-                    let envelope = 1.0;
-                    const progress = (i - sampleIndex) / noteDuration;
-                    
-                    // 淡入
-                    if (progress < 0.05) {
-                        envelope = progress * 20;
-                    }
-                    // 淡出
-                    else if (progress > 0.8) {
-                        envelope = (1 - progress) * 5;
-                    }
-                    
-                    // 添加一些变化使声音更自然
-                    const slightVariation = 1 + (Math.random() * 0.05 - 0.025);
-                    channelData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * envelope * slightVariation * 0.3;
+                // 每个模式位置生成不同频率
+                let freq;
+                switch(notePos) {
+                    case 0: freq = baseFreq;
+                        break;
+                    case 1: freq = baseFreq * 1.25; // 上升一个大三度
+                        break;
+                    case 2: freq = baseFreq * 1.5; // 上升一个纯五度
+                        break;
+                    case 3: freq = baseFreq * 1.75; // 上升一个小七度
+                        break;
+                    case 4: freq = baseFreq * 2.0; // 上升一个八度
+                        break;
+                    case 5: freq = baseFreq * 1.75;
+                        break;
+                    case 6: freq = baseFreq * 1.5;
+                        break;
+                    case 7: freq = baseFreq * 1.25;
+                        break;
+                    default: freq = baseFreq;
                 }
                 
-                // 移动到下一个音符
-                sampleIndex += noteDuration;
-                noteIndex++;
+                // 使用正弦波生成音调，并添加音量包络
+                const envelope = Math.sin(Math.PI * (beatPos % patternLength) / patternLength);
+                const value = Math.sin(2 * Math.PI * freq * i / buffer.sampleRate) * envelope * 0.3;
+                
+                // 添加一些白噪声让声音更丰富
+                const noise = (Math.random() * 2 - 1) * 0.05;
+                channelData[i] = value + noise;
             }
             
-            return buffer;
+            // 创建混合后的音频缓冲区
+            const mixBuffer = audioContext.createBuffer(1, voiceBuffer.length, voiceBuffer.sampleRate);
+            const mixData = mixBuffer.getChannelData(0);
+            const voiceData = voiceBuffer.getChannelData(0);
+            
+            // 混合音频
+            for (let i = 0; i < voiceBuffer.length; i++) {
+                mixData[i] = Math.min(Math.max(voiceData[i] * 0.8 + channelData[i] * musicVolume * 0.5, -1), 1);
+            }
+            
+            // 将混合后的音频缓冲区转换为Blob
+            return await bufferToWave(mixBuffer, mixBuffer.length);
         }
         async function mixAudio(voiceBlob, musicFile, musicVolume) {
             try {
