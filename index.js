@@ -2794,10 +2794,6 @@ async function handleRequest(request) {
         });
     }
 
-    if (path.startsWith("/audio/")) {
-        return handleAudioRequest(request);
-    }
-
     if (path === "/v1/audio/transcriptions") {
         try {
             return await handleAudioTranscription(request);
@@ -3592,42 +3588,5 @@ async function handleAudioTranscription(request) {
             }
         });
     }
-}
-
-async function handleAudioRequest(request, env) {
-  const url = new URL(request.url);
-  const path = url.pathname;
-
-  try {
-    // 1. 提取项目中 audio 目录的文件路径（如 /audio/test.mp3 → audio/test.mp3）
-    // 注意：Pages 中静态文件的路径是从项目根目录开始的，需保留 "audio/" 前缀
-    const assetPath = path.replace(/^\/+/, ''); // 去除开头的斜杠，得到 "audio/test.mp3"
-
-    // 2. 从 Pages 静态资源中读取文件（通过 KV 资产处理器）
-    const event = {
-      request,
-      env: { ASSET_NAMESPACE: env.__STATIC_CONTENT }, // 内置的静态资源命名空间
-    };
-    const response = await getAssetFromKV(event, {
-      mapRequestToAsset: (req) => new Request(
-        new URL(assetPath, req.url).toString(),
-        req
-      ),
-    });
-
-    // 3. 增强响应头（缓存、MIME类型等）
-    const headers = new Headers(response.headers);
-    headers.set('Cache-Control', 'public, max-age=86400'); // 缓存 1 天
-
-    return new Response(response.body, { headers });
-
-  } catch (error) {
-    // 处理文件不存在的情况（getAssetFromKV 会抛出 404 错误）
-    if (error.status === 404) {
-      return new Response('音频文件不存在', { status: 404 });
-    }
-    console.error('处理音频请求失败:', error);
-    return new Response('服务器内部错误', { status: 500 });
-  }
 }
 
