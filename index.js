@@ -1940,8 +1940,8 @@ const HTML_PAGE = `
                 const audioBlob = await response.blob();
                 
                 // 检查是否需要添加背景音乐
-                const backgroundMusic = document.getElementById('backgroundMusic').value;
-                const musicVolume = parseFloat(document.getElementById('musicVolume').value) / 100; // 转换为0-1范围
+                // 复用之前声明的backgroundMusic变量
+                const adjustedMusicVolume = parseFloat(musicVolume) / 100; // 转换为0-1范围
                 
                 let finalAudioBlob = audioBlob;
                 
@@ -1951,14 +1951,14 @@ const HTML_PAGE = `
                     
                     if (backgroundMusic === 'custom' && customMusicFile) {
                         // 使用上传的自定义音乐
-                        finalAudioBlob = await mixAudio(audioBlob, customMusicFile, musicVolume);
+                        finalAudioBlob = await mixAudio(audioBlob, customMusicFile, adjustedMusicVolume);
                     } else {
                         // 使用内置音乐（在实际应用中，这里会加载预设音乐文件）
                         // 这里使用占位符实现，实际应用需替换为真实音乐文件
-                        // finalAudioBlob = await mixWithPresetMusic(audioBlob, backgroundMusic, musicVolume);
+                        // finalAudioBlob = await mixWithPresetMusic(audioBlob, backgroundMusic, adjustedMusicVolume);
                         
                         // 由于是模拟环境，这里仅显示消息而不实际混合
-                        console.log("已选择内置音乐:" +  backgroundMusic, "音量:" + musicVolume);
+                        console.log("已选择内置音乐:" +  backgroundMusic, "音量:" + adjustedMusicVolume);
                     }
                 }
                 
@@ -2014,7 +2014,7 @@ const HTML_PAGE = `
         // 音量滑块实时更新样式
         document.getElementById('musicVolume').addEventListener('input', function() {
             const value = this.value;
-            this.style.background = "linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) ${value}%, var(--border-color) ${value}%, var(--border-color) 100%)";
+            this.style.background = "linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) " + value + "%, var(--border-color) " + value + "%, var(--border-color) 100%)";
         });
         
         // 自定义音乐上传功能
