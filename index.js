@@ -2014,7 +2014,7 @@ const HTML_PAGE = `
         // 音量滑块实时更新样式
         document.getElementById('musicVolume').addEventListener('input', function() {
             const value = this.value;
-            this.style.background = linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) ${value}%, var(--border-color) ${value}%, var(--border-color) 100%);
+            this.style.background = "linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) ${value}%, var(--border-color) ${value}%, var(--border-color) 100%)";
         });
         
         // 自定义音乐上传功能
