@@ -1115,6 +1115,13 @@ const HTML_PAGE = `
                                 <option value="serious">🎯 严肃正式</option>
                             </select>
                         </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="backgroundMusic">背景音乐</label>
+                            <select class="form-select" id="backgroundMusic">
+                                <option value="general" selected>🎭 通用风格</option>
+                            </select>
+                        </div>
                     </div>
                     
                     <button type="submit" class="btn-primary" id="generateBtn">
