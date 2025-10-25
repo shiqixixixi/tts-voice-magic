@@ -1,4 +1,3 @@
-import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
 const TOKEN_REFRESH_BEFORE_EXPIRY = 3 * 60;
 let tokenInfo = {
     endpoint: null,
