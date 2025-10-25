@@ -1261,7 +1261,7 @@ const HTML_PAGE = `
                         <div class="form-group">
                             <label class="form-label" for="backgroundMusic">背景音乐</label>
                             <select class="form-select" id="backgroundMusic">
-                                <option value="musicnone" selected>🎭 无背景音乐</option>
+                                <option value="musicnone" selected>无背景音乐</option>
                                 <option value="music1">🎵 轻松愉快</option>
                                 <option value="music2">🎵 安静优雅</option>
                                 <option value="music3">🎵 激情澎湃</option>
