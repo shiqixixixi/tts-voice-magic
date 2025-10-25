@@ -1953,11 +1953,10 @@ const HTML_PAGE = `
                         // 使用上传的自定义音乐
                         finalAudioBlob = await mixAudio(audioBlob, customMusicFile, adjustedMusicVolume);
                     } else {
-                        // 使用内置音乐（在实际应用中，这里会加载预设音乐文件）
-                        // 这里使用占位符实现，实际应用需替换为真实音乐文件
-                        // finalAudioBlob = await mixWithPresetMusic(audioBlob, backgroundMusic, adjustedMusicVolume);
-                        
-                        // 由于是模拟环境，这里仅显示消息而不实际混合
+                        // 使用内置音乐，这里创建简单的音调作为背景音乐
+                        loadingText.textContent = '正在生成背景音乐...';
+                        // 生成对应的背景音乐并混合
+                        finalAudioBlob = await mixWithPresetMusic(audioBlob, backgroundMusic, adjustedMusicVolume);
                         console.log("已选择内置音乐:" +  backgroundMusic, "音量:" + adjustedMusicVolume);
                     }
                 }
@@ -2365,7 +2364,125 @@ const HTML_PAGE = `
             document.querySelector('.main-content').scrollIntoView({ behavior: 'smooth' });
         });
 
-        // 在前端混合两个音频文件
+        // 生成预设背景音乐并混合
+        async function mixWithPresetMusic(voiceBlob, musicType, musicVolume) {
+            try {
+                // 创建音频上下文
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioContext = new AudioContext();
+                
+                // 解码语音音频
+                const voiceBuffer = await decodeAudioData(audioContext, voiceBlob);
+                
+                // 生成简单的背景音乐
+                const musicBuffer = generateBackgroundMusic(audioContext, voiceBuffer.length, voiceBuffer.sampleRate, musicType);
+                
+                // 创建混合后的音频缓冲区
+                const mixBuffer = audioContext.createBuffer(
+                    1, // 单声道
+                    voiceBuffer.length,
+                    voiceBuffer.sampleRate
+                );
+                
+                const mixData = mixBuffer.getChannelData(0);
+                const voiceData = voiceBuffer.getChannelData(0);
+                const musicData = musicBuffer.getChannelData(0);
+                
+                // 混合音频，调整背景音乐音量
+                for (let i = 0; i < voiceBuffer.length; i++) {
+                    // 获取对应位置的音乐数据
+                    const musicSample = musicData[i] * musicVolume;
+                    // 将语音和音乐混合，防止过度削波
+                    mixData[i] = Math.min(Math.max(voiceData[i] * 0.8 + musicSample * 0.5, -1), 1);
+                }
+                
+                // 将混合后的音频缓冲区转换为Blob
+                const mixedBlob = await bufferToWave(mixBuffer, mixBuffer.length);
+                return mixedBlob;
+            } catch (error) {
+                console.error('生成并混合背景音乐失败:', error);
+                // 如果混合失败，返回原始语音
+                return voiceBlob;
+            }
+        }
+        
+        // 根据音乐类型生成简单的背景音乐
+        function generateBackgroundMusic(audioContext, length, sampleRate, musicType) {
+            const buffer = audioContext.createBuffer(1, length, sampleRate);
+            const channelData = buffer.getChannelData(0);
+            
+            // 根据音乐类型设置不同的参数
+            let noteSequence, tempo;
+            
+            switch(musicType) {
+                case 'music1': // 轻松愉快
+                    noteSequence = [0, 2, 4, 5, 4, 2, 0, 2]; // C大调简单旋律
+                    tempo = 1.0; // 速度
+                    break;
+                case 'music2': // 安静优雅
+                    noteSequence = [0, 3, 5, 3, 0]; // 简单的缓慢旋律
+                    tempo = 0.5; // 较慢的速度
+                    break;
+                case 'music3': // 激情澎湃
+                    noteSequence = [4, 5, 7, 9, 7, 5, 4]; // 上行旋律
+                    tempo = 1.5; // 较快的速度
+                    break;
+                case 'music4': // 温馨浪漫
+                    noteSequence = [0, 4, 7, 12, 11, 9, 7, 4]; // 抒情旋律
+                    tempo = 0.7; // 中等速度
+                    break;
+                case 'music5': // 悬疑紧张
+                    noteSequence = [0, 3, 7, 11, 10, 8, 5, 1]; // 不和谐旋律
+                    tempo = 1.2; // 较快的速度
+                    break;
+                default:
+                    noteSequence = [0, 2, 4, 5]; // 默认简单旋律
+                    tempo = 1.0;
+            }
+            
+            // 生成音乐数据
+            const samplesPerBeat = sampleRate / (4 * tempo); // 每拍的采样数
+            let noteIndex = 0;
+            let sampleIndex = 0;
+            
+            while (sampleIndex < length) {
+                // 获取当前音符
+                const note = noteSequence[noteIndex % noteSequence.length];
+                
+                // 将音符转换为频率（基于C4 = 261.63 Hz）
+                const frequency = 261.63 * Math.pow(2, note / 12);
+                
+                // 计算音符持续时间（约为一拍）
+                const noteDuration = Math.floor(samplesPerBeat);
+                const endIndex = Math.min(sampleIndex + noteDuration, length);
+                
+                // 生成正弦波
+                for (let i = sampleIndex; i < endIndex; i++) {
+                    // 音量包络线（淡入淡出）
+                    let envelope = 1.0;
+                    const progress = (i - sampleIndex) / noteDuration;
+                    
+                    // 淡入
+                    if (progress < 0.05) {
+                        envelope = progress * 20;
+                    }
+                    // 淡出
+                    else if (progress > 0.8) {
+                        envelope = (1 - progress) * 5;
+                    }
+                    
+                    // 添加一些变化使声音更自然
+                    const slightVariation = 1 + (Math.random() * 0.05 - 0.025);
+                    channelData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * envelope * slightVariation * 0.3;
+                }
+                
+                // 移动到下一个音符
+                sampleIndex += noteDuration;
+                noteIndex++;
+            }
+            
+            return buffer;
+        }
         async function mixAudio(voiceBlob, musicFile, musicVolume) {
             try {
                 // 创建音频上下文
