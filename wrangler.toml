@@ -11,6 +11,15 @@ invocation_logs = true
 
 [env.production]
 name = "tts-voice-magic"
+routes = [
+  "https://tts.ityxx.cn/*"  # 替换为你的 workers.dev 域名
+]
+
+# （可选）本地开发路由（仅用于 wrangler dev）
+[env.development]
+routes = [
+  "http://localhost:8787/*"
+]
 
 [env.staging]
 name = "tts-voice-magic-staging"
