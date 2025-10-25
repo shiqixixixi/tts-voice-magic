@@ -2499,13 +2499,13 @@ const HTML_PAGE = `
             }
             
             // 为了向后兼容，保留原有网络音乐选项
-            const musicUrls = {
-                'music1': 'https://assets.mixkit.co/music/preview/mixkit-happy-bells-186.mp3', // 轻松愉快
-                'music2': 'https://assets.mixkit.co/music/preview/mixkit-soft-piano-133.mp3', // 安静优雅
-                'music3': 'https://assets.mixkit.co/music/preview/mixkit-epic-orchestral-moment-126.mp3', // 激情澎湃
-                'music4': 'https://assets.mixkit.co/music/preview/mixkit-soft-romantic-piano-90.mp3', // 温馨浪漫
-                'music5': 'https://assets.mixkit.co/music/preview/mixkit-tension-suspense-game-soundtrack-667.mp3' // 悬疑紧张
-            };
+                const musicUrls = {
+                    'music1': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // 轻松愉快
+                    'music2': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', // 安静优雅
+                    'music3': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', // 激情澎湃
+                    'music4': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', // 温馨浪漫
+                    'music5': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'  // 悬疑紧张
+                };
             
             return musicUrls[musicType] || musicUrls['music1']; // 默认返回第一个
         }
