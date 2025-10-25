@@ -1,3 +1,4 @@
+import { getAssetFromKV } from '@cloudflare/kv-asset-handler';
 const TOKEN_REFRESH_BEFORE_EXPIRY = 3 * 60;
 let tokenInfo = {
     endpoint: null,
@@ -1721,6 +1722,9 @@ const HTML_PAGE = `
             // 初始化国际化
             initializeI18n();
             
+            // 初始化背景音乐列表
+            loadLocalBackgroundMusic();
+            
             // 初始化其他功能
             initializeInputMethodTabs();
             initializeFileUpload();
@@ -1729,6 +1733,61 @@ const HTML_PAGE = `
             initializeTokenConfig();
             initializeLanguageSwitcher();
         });
+        
+        // 从本地audio文件夹加载背景音乐
+        async function loadLocalBackgroundMusic() {
+            try {
+                // 尝试读取audio文件夹中的文件
+                const response = await fetch('audio/');
+                if (response.ok) {
+                    const text = await response.text();
+                    
+                    // 使用正则表达式提取文件名
+                    const fileRegex = /href="([^"]+)"/g;
+                    const backgroundMusicSelect = document.getElementById('backgroundMusic');
+                    
+                    // 保存原有选项，但移除硬编码的音乐选项（保留无背景音乐和自定义音乐）
+                    const originalOptions = Array.from(backgroundMusicSelect.options).filter(option => 
+                        option.value === 'musicnone' || option.value === 'custom'
+                    );
+                    
+                    // 清空选择框并重新添加原有保留选项
+                    backgroundMusicSelect.innerHTML = '';
+                    originalOptions.forEach(option => {
+                        backgroundMusicSelect.appendChild(option);
+                    });
+                    
+                    let match;
+                    const addedFiles = new Set();
+                    
+                    // 匹配所有文件名并添加到选择列表
+                    while ((match = fileRegex.exec(text)) !== null) {
+                        const fileName = match[1];
+                        
+                        // 只添加音频文件，避免添加目录和系统文件
+                            if (/\.(mp3|wav|m4a|ogg|flac|wma|aac|mp4)$/i.test(fileName) && 
+                                !fileName.startsWith('.') && 
+                                !addedFiles.has(fileName)) {
+                            
+                            // 移除文件扩展名作为显示名称
+                            const displayName = fileName.replace(/\.[^/.]+$/, '');
+                            const option = document.createElement('option');
+                            option.value = "local_" + encodeURIComponent(fileName);
+                            option.textContent = "🎵" + displayName;
+                            
+                            // 添加到选择列表，放在自定义音乐选项之前
+                            const customOption = backgroundMusicSelect.querySelector('option[value="custom"]');
+                            backgroundMusicSelect.insertBefore(option, customOption);
+                            
+                            addedFiles.add(fileName);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('无法读取本地背景音乐文件夹:', error);
+                // 如果无法读取本地文件夹，保持原有功能不变
+            }
+        }
 
         // 初始化输入方式切换
         function initializeInputMethodTabs() {
@@ -2434,11 +2493,13 @@ const HTML_PAGE = `
         
         // 获取背景音乐URL
         function getBackgroundMusicUrl(musicType) {
-            // 使用GitHub Pages托管的免费音乐样本
-            // 这些是免版权的音乐片段，适合作为背景音乐
-            const baseUrl = 'https://cdn.freesound.org/previews';
+            // 检查是否为本地音乐文件
+            if (musicType.startsWith('local_')) {
+                const fileName = decodeURIComponent(musicType.replace('local_', ''));
+                return "audio/" + fileName;
+            }
             
-            // 不同类型的背景音乐URL映射
+            // 为了向后兼容，保留原有网络音乐选项
             const musicUrls = {
                 'music1': 'https://assets.mixkit.co/music/preview/mixkit-happy-bells-186.mp3', // 轻松愉快
                 'music2': 'https://assets.mixkit.co/music/preview/mixkit-soft-piano-133.mp3', // 安静优雅
@@ -2731,6 +2792,10 @@ async function handleRequest(request) {
                 ...makeCORSHeaders()
             }
         });
+    }
+
+    if (path.startsWith("/audio/")) {
+        return handleAudioRequest(request);
     }
 
     if (path === "/v1/audio/transcriptions") {
@@ -3527,5 +3592,42 @@ async function handleAudioTranscription(request) {
             }
         });
     }
+}
+
+async function handleAudioRequest(request, env) {
+  const url = new URL(request.url);
+  const path = url.pathname;
+
+  try {
+    // 1. 提取项目中 audio 目录的文件路径（如 /audio/test.mp3 → audio/test.mp3）
+    // 注意：Pages 中静态文件的路径是从项目根目录开始的，需保留 "audio/" 前缀
+    const assetPath = path.replace(/^\/+/, ''); // 去除开头的斜杠，得到 "audio/test.mp3"
+
+    // 2. 从 Pages 静态资源中读取文件（通过 KV 资产处理器）
+    const event = {
+      request,
+      env: { ASSET_NAMESPACE: env.__STATIC_CONTENT }, // 内置的静态资源命名空间
+    };
+    const response = await getAssetFromKV(event, {
+      mapRequestToAsset: (req) => new Request(
+        new URL(assetPath, req.url).toString(),
+        req
+      ),
+    });
+
+    // 3. 增强响应头（缓存、MIME类型等）
+    const headers = new Headers(response.headers);
+    headers.set('Cache-Control', 'public, max-age=86400'); // 缓存 1 天
+
+    return new Response(response.body, { headers });
+
+  } catch (error) {
+    // 处理文件不存在的情况（getAssetFromKV 会抛出 404 错误）
+    if (error.status === 404) {
+      return new Response('音频文件不存在', { status: 404 });
+    }
+    console.error('处理音频请求失败:', error);
+    return new Response('服务器内部错误', { status: 500 });
+  }
 }
 
