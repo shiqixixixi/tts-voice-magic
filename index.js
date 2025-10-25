@@ -717,6 +717,148 @@ const HTML_PAGE = `
             min-width: 140px;
         }
         
+        /* 音量滑块样式 */
+        .form-range {
+            width: 100%;
+            height: 6px;
+            border-radius: 10px;
+            background: linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) 30%, var(--border-color) 30%, var(--border-color) 100%);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .form-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
+        }
+        
+        .form-range::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+            box-shadow: 0 3px 8px rgba(37, 99, 235, 0.4);
+        }
+        
+        .form-range::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+        }
+        
+        .range-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+        
+        /* 文件上传区域样式 */
+        .file-upload-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .file-drop-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--card-background);
+        }
+        
+        .file-drop-zone:hover,
+        .file-drop-zone.dragover {
+            border-color: var(--primary-color);
+            background-color: rgba(37, 99, 235, 0.05);
+        }
+        
+        .file-drop-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .file-drop-icon {
+            color: var(--primary-color);
+        }
+        
+        .file-drop-text {
+            margin: 0;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .file-drop-hint {
+            margin: 0;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .file-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: var(--card-background);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .file-details {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow: hidden;
+        }
+        
+        .file-name {
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-primary);
+        }
+        
+        .file-size {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        
+        .file-remove-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .file-remove-btn:hover {
+            background-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        
         /* 语言切换器样式 */
         .language-switcher {
             position: fixed;
@@ -1119,8 +1261,51 @@ const HTML_PAGE = `
                         <div class="form-group">
                             <label class="form-label" for="backgroundMusic">背景音乐</label>
                             <select class="form-select" id="backgroundMusic">
-                                <option value="general" selected>🎭 通用风格</option>
+                                <option value="musicnone" selected>🎭 无背景音乐</option>
+                                <option value="music1">🎵 轻松愉快</option>
+                                <option value="music2">🎵 安静优雅</option>
+                                <option value="music3">🎵 激情澎湃</option>
+                                <option value="music4">🎵 温馨浪漫</option>
+                                <option value="music5">🎵 悬疑紧张</option>
+                                <option value="custom">📁 自定义音乐</option>
                             </select>
+                        </div>
+                        
+                        <!-- 背景音乐音量控制 -->
+                        <div class="form-group">
+                            <label class="form-label" for="musicVolume">音乐音量</label>
+                            <input type="range" id="musicVolume" min="0" max="100" value="30" class="form-range">
+                            <div class="range-labels">
+                                <span>0%</span>
+                                <span>50%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+                        
+                        <!-- 自定义音乐上传区域 -->
+                        <div class="form-group" id="customMusicArea" style="display: none;">
+                            <label class="form-label" for="customMusicInput">上传自定义音乐</label>
+                            <div class="file-upload-container">
+                                <div class="file-drop-zone" id="customMusicDropZone">
+                                    <div class="file-drop-content">
+                                        <div class="file-drop-icon">
+                                            <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                                            </svg>
+                                        </div>
+                                        <p class="file-drop-text">拖拽音乐文件到此处，或点击选择文件</p>
+                                        <p class="file-drop-hint">支持mp3、wav、m4a格式，最大5MB</p>
+                                    </div>
+                                    <input type="file" id="customMusicInput" accept=".mp3,.wav,.m4a,audio/*" style="display: none;">
+                                </div>
+                                <div class="file-info" id="customMusicInfo" style="display: none;">
+                                    <div class="file-details">
+                                        <span class="file-name" id="customMusicName"></span>
+                                        <span class="file-size" id="customMusicSize"></span>
+                                    </div>
+                                    <button type="button" class="file-remove-btn" id="customMusicRemoveBtn">✕</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -1660,6 +1845,7 @@ const HTML_PAGE = `
             const speed = document.getElementById('speed').value;
             const pitch = document.getElementById('pitch').value;
             const style = document.getElementById('style').value;
+            const backgroundMusic = document.getElementById('backgroundMusic').value;
             
             const generateBtn = document.getElementById('generateBtn');
             const resultContainer = document.getElementById('result');
@@ -1696,6 +1882,10 @@ const HTML_PAGE = `
                 // 更新加载提示
                 const loadingText = document.getElementById('loadingText');
                 const progressInfo = document.getElementById('progressInfo');
+                
+                // 获取背景音乐和音量设置
+                const backgroundMusic = document.getElementById('backgroundMusic').value;
+                const musicVolume = document.getElementById('musicVolume').value;
                 
                 if (currentInputMethod === 'text') {
                     // 手动输入文本
@@ -1748,7 +1938,31 @@ const HTML_PAGE = `
                 }
                 
                 const audioBlob = await response.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                // 检查是否需要添加背景音乐
+                const backgroundMusic = document.getElementById('backgroundMusic').value;
+                const musicVolume = parseFloat(document.getElementById('musicVolume').value) / 100; // 转换为0-1范围
+                
+                let finalAudioBlob = audioBlob;
+                
+                // 如果选择了背景音乐且不是"无背景音乐"选项
+                if (backgroundMusic !== 'musicnone') {
+                    loadingText.textContent = '正在合成背景音乐...';
+                    
+                    if (backgroundMusic === 'custom' && customMusicFile) {
+                        // 使用上传的自定义音乐
+                        finalAudioBlob = await mixAudio(audioBlob, customMusicFile, musicVolume);
+                    } else {
+                        // 使用内置音乐（在实际应用中，这里会加载预设音乐文件）
+                        // 这里使用占位符实现，实际应用需替换为真实音乐文件
+                        // finalAudioBlob = await mixWithPresetMusic(audioBlob, backgroundMusic, musicVolume);
+                        
+                        // 由于是模拟环境，这里仅显示消息而不实际混合
+                        console.log("已选择内置音乐:" +  backgroundMusic, "音量:" + musicVolume);
+                    }
+                }
+                
+                const audioUrl = URL.createObjectURL(finalAudioBlob);
                 
                 // 显示音频播放器
                 const audioPlayer = document.getElementById('audioPlayer');
@@ -1787,6 +2001,95 @@ const HTML_PAGE = `
             }
         });
 
+        // 绑定背景音乐选择事件
+        document.getElementById('backgroundMusic').addEventListener('change', function() {
+            const customMusicArea = document.getElementById('customMusicArea');
+            if (this.value === 'custom') {
+                customMusicArea.style.display = 'block';
+            } else {
+                customMusicArea.style.display = 'none';
+            }
+        });
+        
+        // 音量滑块实时更新样式
+        document.getElementById('musicVolume').addEventListener('input', function() {
+            const value = this.value;
+            this.style.background = linear-gradient(to right, var(--primary-color) 0%, var(--primary-color) ${value}%, var(--border-color) ${value}%, var(--border-color) 100%);
+        });
+        
+        // 自定义音乐上传功能
+        let customMusicFile = null;
+        const customMusicDropZone = document.getElementById('customMusicDropZone');
+        const customMusicInput = document.getElementById('customMusicInput');
+        const customMusicInfo = document.getElementById('customMusicInfo');
+        const customMusicName = document.getElementById('customMusicName');
+        const customMusicSize = document.getElementById('customMusicSize');
+        const customMusicRemoveBtn = document.getElementById('customMusicRemoveBtn');
+        
+        // 点击上传区域触发文件选择
+        customMusicDropZone.addEventListener('click', function() {
+            customMusicInput.click();
+        });
+        
+        // 监听文件选择变化
+        customMusicInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                handleMusicFile(this.files[0]);
+            }
+        });
+        
+        // 拖拽事件处理
+        customMusicDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        customMusicDropZone.addEventListener('dragleave', function() {
+            this.classList.remove('dragover');
+        });
+        
+        customMusicDropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleMusicFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // 处理音乐文件
+        function handleMusicFile(file) {
+            // 验证文件类型
+            const allowedTypes = ['audio/mp3', 'audio/wav', 'audio/m4a', 'audio/mpeg'];
+            const allowedExtensions = ['.mp3', '.wav', '.m4a'];
+            const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+            
+            if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+                alert('不支持的文件类型，请上传mp3、wav或m4a格式的音乐文件');
+                return;
+            }
+            
+            // 验证文件大小（最大5MB）
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            if (file.size > maxSize) {
+                alert('文件大小不能超过5MB');
+                return;
+            }
+            
+            // 保存文件并显示文件信息
+            customMusicFile = file;
+            customMusicName.textContent = file.name;
+            customMusicSize.textContent = formatFileSize(file.size);
+            customMusicInfo.style.display = 'flex';
+        }
+        
+        // 移除自定义音乐
+        customMusicRemoveBtn.addEventListener('click', function() {
+            customMusicFile = null;
+            customMusicInput.value = '';
+            customMusicInfo.style.display = 'none';
+        });
+        
         // 初始化模式切换器
         function initializeModeSwitcher() {
             const ttsMode = document.getElementById('ttsMode');
@@ -2062,6 +2365,115 @@ const HTML_PAGE = `
             document.querySelector('.main-content').scrollIntoView({ behavior: 'smooth' });
         });
 
+        // 在前端混合两个音频文件
+        async function mixAudio(voiceBlob, musicFile, musicVolume) {
+            try {
+                // 创建音频上下文
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioContext = new AudioContext();
+                
+                // 解码语音音频
+                const voiceBuffer = await decodeAudioData(audioContext, voiceBlob);
+                
+                // 读取音乐文件并解码
+                const musicBlob = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(new Blob([reader.result]));
+                    reader.readAsArrayBuffer(musicFile);
+                });
+                const musicBuffer = await decodeAudioData(audioContext, musicBlob);
+                
+                // 创建混合后的音频缓冲区
+                const mixBuffer = audioContext.createBuffer(
+                    1, // 单声道
+                    voiceBuffer.length,
+                    voiceBuffer.sampleRate
+                );
+                
+                const mixData = mixBuffer.getChannelData(0);
+                const voiceData = voiceBuffer.getChannelData(0);
+                const musicData = musicBuffer.getChannelData(0);
+                
+                // 混合音频，调整背景音乐音量
+                for (let i = 0; i < voiceBuffer.length; i++) {
+                    // 获取对应位置的音乐数据，如果超出范围则使用0
+                    const musicSample = (i < musicData.length) ? musicData[i] * musicVolume : 0;
+                    // 将语音和音乐混合，防止过度削波
+                    mixData[i] = Math.min(Math.max(voiceData[i] * 0.8 + musicSample * 0.5, -1), 1);
+                }
+                
+                // 将混合后的音频缓冲区转换为Blob
+                const mixedBlob = await bufferToWave(mixBuffer, mixBuffer.length);
+                return mixedBlob;
+            } catch (error) {
+                console.error('混合音频失败:', error);
+                // 如果混合失败，返回原始语音
+                return voiceBlob;
+            }
+        }
+        
+        // 辅助函数：解码音频数据
+        function decodeAudioData(audioContext, blob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = async () => {
+                    try {
+                        const audioData = await audioContext.decodeAudioData(reader.result);
+                        resolve(audioData);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+        
+        // 辅助函数：将AudioBuffer转换为WAV格式的Blob
+        function bufferToWave(buffer, len) {
+            const numOfChan = 1;
+            const length = len * numOfChan * 2; // 16位
+            const result = new ArrayBuffer(44 + length);
+            const view = new DataView(result);
+            
+            // WAV文件头
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 32 + length, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // PCM格式
+            view.setUint16(22, numOfChan, true);
+            view.setUint32(24, buffer.sampleRate, true);
+            view.setUint32(28, buffer.sampleRate * 2, true); // 位率
+            view.setUint16(32, numOfChan * 2, true); // 块对齐
+            view.setUint16(34, 16, true); // 16位
+            writeString(view, 36, 'data');
+            view.setUint32(40, length, true);
+            
+            // 写入音频数据
+            const bufferData = buffer.getChannelData(0);
+            let index = 44;
+            const volume = 1;
+            for (let i = 0; i < len; i++) {
+                let sample = bufferData[i] * volume;
+                if (sample > 1) sample = 1;
+                if (sample < -1) sample = -1;
+                sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+                view.setInt16(index, sample, true);
+                index += 2;
+            }
+            
+            return new Blob([result], { type: 'audio/wav' });
+            
+            // 辅助函数：写入字符串到DataView
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+        }
+        
         // 初始化国际化
         function initializeI18n() {
             // 检查本地存储中的语言设置
