@@ -3,6 +3,11 @@ main = "index.js"
 compatibility_date = "2024-01-15"
 compatibility_flags = ["nodejs_compat"]
 
+# 静态资源配置（正确格式）
+[assets]
+binding = "ASSETS"  # 固定绑定名称，必须为 "ASSETS"
+directory = "./public"  # 必须包含此字段，指定静态文件目录
+
 [observability]
 [observability.logs]
 enabled = true
@@ -11,36 +16,22 @@ invocation_logs = true
 
 [env.production]
 name = "tts-voice-magic"
-routes = [
-  "https://tts.ityxx.cn/*"  # 替换为你的 workers.dev 域名
-]
+routes = ["https://tts.ityxx.cn/*"]
 
-# （可选）本地开发路由（仅用于 wrangler dev）
 [env.development]
-routes = [
-  "http://localhost:8787/*"
-]
+routes = ["http://localhost:8787/*"]
 
 [env.staging]
 name = "tts-voice-magic-staging"
 
-# 变量配置（如果需要的话）
 [vars]
-# 可以在这里添加环境变量
+# 环境变量
 
-# 如果需要 KV 存储（可选）
+# （可选）KV 存储
 # [[kv_namespaces]]
 # binding = "MY_KV_NAMESPACE"
 # id = "your-kv-namespace-id"
 # preview_id = "your-preview-kv-namespace-id"
 
-# 如果需要 D1 数据库（可选）
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "my-database"
-# database_id = "your-database-id"
-
-# 路由配置
 [triggers]
 crons = []
-

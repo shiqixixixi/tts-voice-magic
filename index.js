@@ -2769,20 +2769,26 @@ const HTML_PAGE = `
 
 export default {
     async fetch(request, env, ctx) {
-        return handleRequest(request);
+        return handleRequest(request, env);
     }
 };
 
-async function handleRequest(request) {
+async function handleRequest(request, env) {    
     if (request.method === "OPTIONS") {
         return handleOptions(request);
     }
 
-
-
-
     const requestUrl = new URL(request.url);
     const path = requestUrl.pathname;
+
+        // 1. 优先尝试访问静态文件（如 /audio/voice1.mp3）
+    const staticResponse = await env.ASSETS.fetch(request);
+    if (staticResponse.ok) {
+      // 添加跨域头（根据需求调整）
+      const headers = new Headers(staticResponse.headers);
+      headers.set("Access-Control-Allow-Origin", "*");
+      return new Response(staticResponse.body, { headers });
+    }
 
     // 返回前端页面
     if (path === "/" || path === "/index.html") {
