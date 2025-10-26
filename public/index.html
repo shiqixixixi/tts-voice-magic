@@ -2686,12 +2686,15 @@
         }
         async function mixAudio(voiceBlob, musicFile, musicVolume) {
             try {
+                console.log('开始混合音频，音乐音量:', musicVolume);
+                
                 // 创建音频上下文
                 const AudioContext = window.AudioContext || window.webkitAudioContext;
                 const audioContext = new AudioContext();
 
                 // 解码语音音频
                 const voiceBuffer = await decodeAudioData(audioContext, voiceBlob);
+                console.log('语音音频解码完成，长度:', voiceBuffer.length);
 
                 // 读取音乐文件并解码
                 const musicBlob = await new Promise(resolve => {
@@ -2699,8 +2702,22 @@
                     reader.onloadend = () => resolve(new Blob([reader.result]));
                     reader.readAsArrayBuffer(musicFile);
                 });
-                const musicBuffer = await decodeAudioData(audioContext, musicBlob);
+                
+                let musicBuffer;
+                try {
+                    musicBuffer = await decodeAudioData(audioContext, musicBlob);
+                    console.log('音乐文件解码完成，长度:', musicBuffer.length);
+                } catch (decodeError) {
+                    console.error('音乐文件解码失败:', decodeError);
+                    // 如果解码失败，使用简单音调作为替代
+                    console.warn('使用替代音调作为背景音乐');
+                    return await generateAndMixFallbackMusic(voiceBlob, 'music1', musicVolume);
+                }
 
+                // 计算音乐音量增益，大幅提高音乐音量
+                const musicGain = Math.max(0.3, Math.min(1.5, musicVolume * 1.2)); // 提高增益上限和基础值
+                console.log('应用的音乐增益:', musicGain);
+                
                 // 创建混合后的音频缓冲区
                 const mixBuffer = audioContext.createBuffer(
                     1, // 单声道
@@ -2712,14 +2729,46 @@
                 const voiceData = voiceBuffer.getChannelData(0);
                 const musicData = musicBuffer.getChannelData(0);
 
-                // 混合音频，调整背景音乐音量
+                // 大幅调整音量因子，让音乐更突出
+                const voiceFactor = 0.5; // 进一步降低语音比例
+                const musicFactor = 0.9 * musicGain; // 大幅提高音乐基础音量
+                
+                console.log('开始音频混合处理...');
+                
+                // 混合音频，实现音乐循环播放
                 for (let i = 0; i < voiceBuffer.length; i++) {
-                    // 获取对应位置的音乐数据，如果超出范围则使用0
-                    const musicSample = (i < musicData.length) ? musicData[i] * musicVolume : 0;
-                    // 将语音和音乐混合，防止过度削波
-                    mixData[i] = Math.min(Math.max(voiceData[i] * 0.8 + musicSample * 0.5, -1), 1);
+                    // 使用循环索引确保音乐持续播放
+                    const musicIndex = Math.floor(i * musicBuffer.length / voiceBuffer.length) % musicBuffer.length;
+                    
+                    // 直接提升音乐采样值，进一步加强音乐音量
+                    const musicSample = musicData[musicIndex] * 1.5;
+                    const voiceValue = voiceData[i];
+                    
+                    // 简化动态音量控制，减少音乐音量衰减
+                    // 仅在语音非常强时略微降低音乐音量
+                    const voiceAbs = Math.abs(voiceValue);
+                    const dynamicMusicFactor = voiceAbs > 0.7 ? 
+                                              musicFactor * (1 - (voiceAbs - 0.7) * 0.4) : 
+                                              musicFactor;
+                    
+                    // 混合音频
+                    let mixedValue = voiceValue * voiceFactor + musicSample * dynamicMusicFactor;
+                    
+                    // 应用硬限幅，但允许一定程度的削波以增加响度
+                    mixedValue = Math.max(-1.2, Math.min(1.2, mixedValue));
+                    
+                    // 软削波处理
+                    if (mixedValue > 1) {
+                        mixData[i] = 1 - Math.exp(1 - mixedValue) * 0.5;
+                    } else if (mixedValue < -1) {
+                        mixData[i] = -1 + Math.exp(mixedValue + 1) * 0.5;
+                    } else {
+                        mixData[i] = mixedValue;
+                    }
                 }
 
+                console.log('音频混合完成');
+                
                 // 将混合后的音频缓冲区转换为Blob
                 const mixedBlob = await bufferToWave(mixBuffer, mixBuffer.length);
                 return mixedBlob;
