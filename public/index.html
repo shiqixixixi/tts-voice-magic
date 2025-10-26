@@ -1774,12 +1774,11 @@
 
                     // 清空选择框（先注释掉的代码恢复，避免重复添加原有选项）
                     backgroundMusicSelect.innerHTML = '';
-                    originalOptions.forEach(option => {
-                        backgroundMusicSelect.appendChild(option);
-                    });
+                    backgroundMusicSelect.append(...originalOptions);
 
                     let match;
                     const addedFiles = new Set();
+                    const audioExtensions = /\.(mp3|wav|m4a|ogg|flac|wma|aac|mp4)$/i;
 
                     // 匹配所有文件名并添加到选择列表
                     while ((match = fileRegex.exec(text)) !== null) {
@@ -1795,8 +1794,8 @@
                             const displayName = fileName.replace(/\.[^/.]+$/, '');
                             const option = document.createElement('option');
                             // 关键：value仅拼接"local_"和纯文件名，不含/audio
-                            option.value = "local_" + encodeURIComponent(fileName);
-                            option.textContent = "🎵" + displayName;
+                            option.value = `local_${encodeURIComponent(fileName)}`;
+                            option.textContent = `🎵${displayName}`;
 
                             // 添加到选择列表，放在自定义音乐选项之前
                             const customOption = backgroundMusicSelect.querySelector('option[value="custom"]');
@@ -1808,6 +1807,39 @@
 
                             addedFiles.add(fileName);
                         }
+                    }
+                    
+                    // 检查是否有添加任何音频文件，如果没有则提示用户
+                    if (addedFiles.size === 0) {
+                        setTimeout(() => {
+                            // 添加一个临时选项提示用户
+                            const option = document.createElement('option');
+                            option.value = 'none';
+                            option.textContent = '🎵 请在audio文件夹中添加音频文件';
+                            const customOption = backgroundMusicSelect.querySelector('option[value="custom"]');
+                            if (customOption) {
+                                backgroundMusicSelect.insertBefore(option, customOption);
+                            } else {
+                                backgroundMusicSelect.appendChild(option);
+                            }
+                            
+                            // 确保默认选中"无背景音乐"选项
+                            const noneOption = backgroundMusicSelect.querySelector('option[value="musicnone"]');
+                            if (noneOption) {
+                                noneOption.selected = true;
+                            }
+                            
+                            // 显示提示框
+                            alert('提示：在audio文件夹中未找到音频文件。请上传音频文件到audio文件夹后刷新页面。');
+                        }, 100);
+                    } else {
+                        // 当有音频文件时，确保默认选中"无背景音乐"选项
+                        setTimeout(() => {
+                            const noneOption = backgroundMusicSelect.querySelector('option[value="musicnone"]');
+                            if (noneOption) {
+                                noneOption.selected = true;
+                            }
+                        }, 100);
                     }
                 }
             } catch (error) {
@@ -2031,8 +2063,8 @@
 
                 let finalAudioBlob = audioBlob;
 
-                // 如果选择了背景音乐且不是"无背景音乐"选项
-                if (backgroundMusic !== 'musicnone') {
+                // 如果选择了背景音乐且不是"无背景音乐"或提示选项
+                if (backgroundMusic !== 'musicnone' && backgroundMusic !== 'none') {
                     loadingText.textContent = '正在合成背景音乐...';
 
                     if (backgroundMusic === 'custom' && customMusicFile) {
@@ -2520,10 +2552,15 @@
 
         // 获取背景音乐URL
         function getBackgroundMusicUrl(musicType) {
+            // 如果选择的是提示选项，不播放任何音乐
+            if (musicType === 'none' || musicType === 'musicnone') {
+                return null; // 返回null表示不加载任何音乐
+            }
+            
             // 检查是否为本地音乐文件
             if (musicType.startsWith('local_')) {
                 const fileName = decodeURIComponent(musicType.replace('local_', ''));
-                return "audio/" + fileName;
+                return `audio/${fileName}`;
             }
 
             // 为了向后兼容，保留原有网络音乐选项
@@ -2535,7 +2572,7 @@
                 'music5': 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'  // 悬疑紧张
             };
 
-            return musicUrls[musicType] || musicUrls['music1']; // 默认返回第一个
+            return musicUrls[musicType] || musicUrls.music1; // 默认返回第一个
         }
 
         // 备用方案：生成简单的背景音乐（当网络音频获取失败时使用）
