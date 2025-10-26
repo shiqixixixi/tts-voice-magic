@@ -17,13 +17,27 @@ async function handleRequest(request, env) {
     }
     const requestUrl = new URL(request.url);
     const path = requestUrl.pathname;
-    // 1. 处理 audio/ 目录请求（返回文件列表，供前端解析）
     if (path === "/audio/" || path === "/audio") {
-        //["test.mp3", "雨的印记.mp3"]
-        const response = await fetch("http://localhost:8787/audioFiles.json");
-        const audioJson= await response.json();
-        console.log("audioJson:", audioJson);
-        return handleAudioDirectory(request, env, audioJson);
+        let audioJson;
+        try {
+            if (env.ENVIRONMENT === "development") {
+                // 本地环境：继续用 fetch 访问 localhost
+                const response = await fetch("http://localhost:8787/audioFiles.json");
+                if (!response.ok) throw new Error("本地文件请求失败");
+                audioJson = await response.json();
+            } else {
+                // 生产环境：用 env.ASSETS 访问 Cloudflare 静态资源
+                const assetResponse = await env.ASSETS.get("audioFiles.json");
+                if (!assetResponse) throw new Error("生产环境未找到 audioFiles.json");
+                audioJson = await assetResponse.json();
+            }
+            console.log("audioJson:", audioJson);
+            return handleAudioDirectory(request, env, audioJson);
+        } catch (error) {
+            // 错误处理，避免 Worker 崩溃
+            console.error("获取音频列表失败:", error);
+            return new Response("获取音频列表失败", { status: 500 });
+        }
     }
     // 返回前端页面
     if (path === "/" || path === "/index.html") {
