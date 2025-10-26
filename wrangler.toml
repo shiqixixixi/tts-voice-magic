@@ -1,12 +1,12 @@
 name = "tts-voice-magic"
 main = "index.js"
 compatibility_date = "2024-04-03"
-compatibility_flags = ["nodejs_compat","rpc"]
+compatibility_flags = ["nodejs_compat"]  # 注意逗号分隔（之前漏了逗号）
 
-# 静态资源配置（正确格式）
-[assets]
-binding = "ASSETS"  # 固定绑定名称，必须为 "ASSETS"
-directory = "./public"  # 必须包含此字段，指定静态文件目录
+# 静态资源配置（核心修正：单括号 [assets] → 双括号 [[assets]]）
+[assets]  # 双括号表示数组项，这是 Cloudflare 要求的格式
+binding = "ASSETS"  # 固定绑定名称（必须大写）
+directory = "./public"  # 静态文件目录
 
 [observability]
 [observability.logs]

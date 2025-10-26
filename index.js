@@ -19,7 +19,7 @@ async function handleRequest(request, env) {
     const path = requestUrl.pathname;
     // 1. 处理 audio/ 目录请求（返回文件列表，供前端解析）
     if (path === "/audio/" || path === "/audio") {
-        const audioJson = await env.ASSETS.get("audio-files.json");
+        const audioJson = await env.ASSETS.get("audioFiles.json");
         return await handleAudioDirectory(request, env, audioJson); // 新增目录处理函数
     }
     // 返回前端页面
@@ -106,17 +106,6 @@ async function handleRequest(request, env) {
                 }
             });
         }
-    }
-    // 5. 处理其他静态资源（原有逻辑）
-    const staticAsset = await env.ASSETS.get(path.slice(1)); // 移除路径开头的 "/"
-    if (staticAsset) {
-        const contentType = getContentType(path);
-        return new Response(staticAsset, {
-            headers: {
-                "Content-Type": contentType,
-                ...makeCORSHeaders()
-            }
-        });
     }
     // 默认返回 404
     return new Response("Not Found", { status: 404 });
