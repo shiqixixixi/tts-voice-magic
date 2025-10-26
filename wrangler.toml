@@ -7,6 +7,8 @@ compatibility_flags = ["nodejs_compat"]  # 注意逗号分隔（之前漏了逗�
 [assets]  # 双括号表示数组项，这是 Cloudflare 要求的格式
 binding = "ASSETS"  # 固定绑定名称（必须大写）
 directory = "./public"  # 静态文件目录
+run_worker_first = false
+
 
 [observability]
 [observability.logs]

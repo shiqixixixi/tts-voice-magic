@@ -5,8 +5,12 @@ let tokenInfo = {
     expiredAt: null
 };
 
+
 export default {
     async fetch(request, env, ctx) {
+        //console.log("ASSETS 绑定:", env);
+        //const asset = await env.ASSETS.fetch("http://127.0.0.1:8787/audioFiles.json");
+        //console.log("ASSETS 加载:", await asset.json());
         return handleRequest(request, env);
     }
 };
@@ -18,30 +22,15 @@ async function handleRequest(request, env) {
     const requestUrl = new URL(request.url);
     const path = requestUrl.pathname;
     if (path === "/audio/" || path === "/audio") {
-        let audioJson;
-        try {
-            if (env.ENVIRONMENT === "development") {
-                // 本地环境：继续用 fetch 访问 localhost
-                const response = await fetch("http://localhost:8787/audioFiles.json");
-                if (!response.ok) throw new Error("本地文件请求失败");
-                audioJson = await response.json();
-            } else {
-                // 生产环境：用 env.ASSETS 访问 Cloudflare 静态资源
-                const assetResponse = await env.ASSETS.get("audioFiles.json");
-                if (!assetResponse) throw new Error("生产环境未找到 audioFiles.json");
-                audioJson = await assetResponse.json();
-            }
-            console.log("audioJson:", audioJson);
-            return handleAudioDirectory(request, env, audioJson);
-        } catch (error) {
-            // 错误处理，避免 Worker 崩溃
-            console.error("获取音频列表失败:", error);
-            return new Response("获取音频列表失败", { status: 500 });
-        }
+        const assetResponse = await env.ASSETS.fetch("http://127.0.0.1:8787/audioFiles.json");
+        //if (!assetResponse) throw new Error("生产环境未找到 audioFiles.json");
+        const audioJson = await assetResponse.json();
+        console.log("audioJson:", audioJson);
+        return handleAudioDirectory(request, env, audioJson);
     }
     // 返回前端页面
     if (path === "/" || path === "/index.html") {
-        return new Response(env.ASSETS.get("index.html"), {
+        return new Response(await env.ASSETS.fetch("/index.html"), {
             headers: {
                 "Content-Type": "text/html; charset=utf-8",
                 ...makeCORSHeaders()
