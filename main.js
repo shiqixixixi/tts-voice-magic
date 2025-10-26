@@ -20,7 +20,7 @@ async function handleRequest(request, env) {
     // 1. 处理 audio/ 目录请求（返回文件列表，供前端解析）
     if (path === "/audio/" || path === "/audio") {
         //["test.mp3", "雨的印记.mp3"]
-        const response = await fetch("https://tts.ityxx.cn/audioFiles.json");
+        const response = await fetch("http://localhost:8787/audioFiles.json");
         const audioJson= await response.json();
         console.log("audioJson:", audioJson);
         return handleAudioDirectory(request, env, audioJson);
