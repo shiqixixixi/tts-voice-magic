@@ -1,5 +1,5 @@
 name = "tts-voice-magic"
-main = "index.js"
+main = "main.js"
 compatibility_date = "2024-04-03"
 compatibility_flags = ["nodejs_compat"]  # 注意逗号分隔（之前漏了逗号）
 
