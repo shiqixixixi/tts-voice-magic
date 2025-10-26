@@ -829,20 +829,32 @@ async function handleAudioTranscription(request) {
 
 async function handleAudioDirectory(request, env, audioJson) {
     try {
-        if (!audioJson) {
-            return new Response("音频文件列表不存在不存在", {
-                status: 404,
+        if (!audioJson || !Array.isArray(audioJson)) {
+            return new Response("音频文件列表格式错误", {
+                status: 400,
                 headers: makeCORSHeaders()
             });
         }
 
-        // 无需 JSON.parse()，直接使用数组（因为 audioJson 已经是数组）
-        const files = audioJson;
+        // 核心处理：过滤无效值 + 强制拼接 /audio/ 前缀（不管原文件名是否带/）
+        const files = audioJson
+            .filter(fileName => {
+                // 排除空字符串、纯斜杠等无效值
+                const trimmed = fileName.trim();
+                return trimmed !== "" && trimmed !== "/";
+            })
+            .map(fileName => {
+                // 1. 去掉文件名前后的斜杠（避免 /1.mp3 → //1.mp3 的冗余）
+                const cleanFileName = fileName.trim().replace(/^\/+|\/+$/g, "");
+                // 2. 强制拼接 /audio/ 前缀，生成最终路径
+                return `/audio/${cleanFileName}`;
+            });
 
-        // 生成目录索引 HTML
+        // 生成 HTML：链接和显示文本都统一为 /audio/xxx 格式
         let html = `<html><body><h1>Index of /audio/</h1><ul>`;
-        files.forEach(fileName => {
-            html += `<li><a href="audio/${fileName}">${fileName}</a></li>`;
+        files.forEach(filePath => {
+            // 显示文本直接用完整路径（如 /audio/1.mp3），也可按需简化
+            html += `<li><a href="${filePath}">${filePath}</a></li>`;
         });
         html += `</ul></body></html>`;
 
