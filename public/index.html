@@ -1958,12 +1958,19 @@
         // 表单提交处理
         document.getElementById('ttsForm').addEventListener('submit', async function (e) {
             e.preventDefault();
+            
+            // 立即检查背景音乐设置 - 在任何处理开始前
+            const backgroundMusic = document.getElementById('backgroundMusic').value;
+            if (backgroundMusic === 'custom' && !customMusicFile) {
+                // 立即显示提示并完全退出
+                alert('提示：您选择了自定义音乐，请先上传音乐文件！');
+                return;
+            }
 
             const voice = document.getElementById('voice').value;
             const speed = document.getElementById('speed').value;
             const pitch = document.getElementById('pitch').value;
             const style = document.getElementById('style').value;
-            const backgroundMusic = document.getElementById('backgroundMusic').value;
 
             const generateBtn = document.getElementById('generateBtn');
             const resultContainer = document.getElementById('result');
@@ -2067,8 +2074,8 @@
                 if (backgroundMusic !== 'musicnone' && backgroundMusic !== 'none') {
                     loadingText.textContent = '正在合成背景音乐...';
 
-                    if (backgroundMusic === 'custom' && customMusicFile) {
-                        // 使用上传的自定义音乐
+                    if (backgroundMusic === 'custom') {
+                        // 由于已经在表单提交最开始检查过，这里可以直接使用
                         finalAudioBlob = await mixAudio(audioBlob, customMusicFile, adjustedMusicVolume);
                     } else {
                         // 使用内置音乐，这里创建简单的音调作为背景音乐
