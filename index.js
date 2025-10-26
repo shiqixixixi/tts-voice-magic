@@ -17,7 +17,11 @@ async function handleRequest(request, env) {
     }
     const requestUrl = new URL(request.url);
     const path = requestUrl.pathname;
-
+    // 1. 处理 audio/ 目录请求（返回文件列表，供前端解析）
+    if (path === "/audio/" || path === "/audio") {
+        const audioJson = await env.ASSETS.get("audio-files.json");
+        return await handleAudioDirectory(request, env, audioJson); // 新增目录处理函数
+    }
     // 返回前端页面
     if (path === "/" || path === "/index.html") {
         return new Response(env.ASSETS.get("index.html"), {
@@ -103,12 +107,16 @@ async function handleRequest(request, env) {
             });
         }
     }
-    const staticResponse = await env.ASSETS.fetch(request);
-    if (staticResponse.ok) {
-        // 添加跨域头（根据需求调整）
-        const headers = new Headers(staticResponse.headers);
-        headers.set("Access-Control-Allow-Origin", "*");
-        return new Response(staticResponse.body, { headers });
+    // 5. 处理其他静态资源（原有逻辑）
+    const staticAsset = await env.ASSETS.get(path.slice(1)); // 移除路径开头的 "/"
+    if (staticAsset) {
+        const contentType = getContentType(path);
+        return new Response(staticAsset, {
+            headers: {
+                "Content-Type": contentType,
+                ...makeCORSHeaders()
+            }
+        });
     }
     // 默认返回 404
     return new Response("Not Found", { status: 404 });
@@ -828,5 +836,62 @@ async function handleAudioTranscription(request) {
             }
         });
     }
+}
+
+async function handleAudioDirectory(request, env, audioJson) {
+    try {
+        if (!audioJson) {
+            return new Response("音频文件列表不存在", {
+                status: 404,
+                headers: makeCORSHeaders()
+            });
+        }
+
+        // 2. 解析 JSON 得到文件名列表
+        const files = JSON.parse(audioJson);
+
+        // 3. 生成目录索引 HTML（供前端解析 href）
+        let html = `<html><body><h1>Index of /audio/</h1><ul>`;
+        files.forEach(fileName => {
+            // 直接使用 JSON 中的文件名生成链接
+            html += `<li><a href="${fileName}">${fileName}</a></li>`;
+        });
+        html += `</ul></body></html>`;
+
+        return new Response(html, {
+            headers: {
+                "Content-Type": "text/html; charset=utf-8",
+                ...makeCORSHeaders()
+            }
+        });
+    } catch (error) {
+        console.error("处理 audio 目录失败:", error);
+        return new Response("获取音频目录失败", {
+            status: 500,
+            headers: makeCORSHeaders()
+        });
+    }
+}
+
+// 辅助函数：获取文件 MIME 类型（原有）
+function getContentType(path) {
+    const ext = path.split('.').pop().toLowerCase();
+    const types = {
+        html: "text/html",
+        css: "text/css",
+        js: "application/javascript",
+        mp3: "audio/mpeg",
+        wav: "audio/wav",
+        m4a: "audio/mp4",
+        ogg: "audio/ogg",
+        flac: "audio/flac",
+        wma: "audio/x-ms-wma",
+        aac: "audio/aac",
+        mp4: "video/mp4",
+        json: "application/json",
+        png: "image/png",
+        jpg: "image/jpeg"
+    };
+    return types[ext] || "application/octet-stream";
 }
 

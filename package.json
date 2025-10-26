@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "predev": "node generate-audio-json.js", 
+    "predeploy": "node generate-audio-json.js" 
+  }
+}

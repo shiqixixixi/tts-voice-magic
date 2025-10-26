@@ -1,7 +1,7 @@
 name = "tts-voice-magic"
 main = "index.js"
-compatibility_date = "2024-01-15"
-compatibility_flags = ["nodejs_compat"]
+compatibility_date = "2024-04-03"
+compatibility_flags = ["nodejs_compat","rpc"]
 
 # 静态资源配置（正确格式）
 [assets]
