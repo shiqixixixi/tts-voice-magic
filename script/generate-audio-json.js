@@ -4,7 +4,7 @@ const path = require('path');
 // 关键：从 script 文件夹向上一级（..）找到项目根目录，再定位到 public/audio
 const audioDir = path.join(__dirname, '..', 'public', 'audio'); 
 // 输出的 JSON 文件路径：项目根目录/public/audio-files.json
-const outputPath = path.join(__dirname, '..', 'public', 'audio-files.json');
+const outputPath = path.join(__dirname, '..', 'public', 'audioFiles.json');
 
 try {
     // 自动创建 public/audio 目录（如果不存在）

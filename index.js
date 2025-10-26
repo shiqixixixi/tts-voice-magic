@@ -19,8 +19,8 @@ async function handleRequest(request, env) {
     const path = requestUrl.pathname;
     // 1. 处理 audio/ 目录请求（返回文件列表，供前端解析）
     if (path === "/audio/" || path === "/audio") {
-        const audioJson = await env.ASSETS.get("audioFiles.json");
-        return await handleAudioDirectory(request, env, audioJson); // 新增目录处理函数
+        const audioJson = ["1.mp3", ""];
+        return handleAudioDirectory(request, env, audioJson);
     }
     // 返回前端页面
     if (path === "/" || path === "/index.html") {
@@ -830,20 +830,19 @@ async function handleAudioTranscription(request) {
 async function handleAudioDirectory(request, env, audioJson) {
     try {
         if (!audioJson) {
-            return new Response("音频文件列表不存在", {
+            return new Response("音频文件列表不存在不存在", {
                 status: 404,
                 headers: makeCORSHeaders()
             });
         }
 
-        // 2. 解析 JSON 得到文件名列表
-        const files = JSON.parse(audioJson);
+        // 无需 JSON.parse()，直接使用数组（因为 audioJson 已经是数组）
+        const files = audioJson;
 
-        // 3. 生成目录索引 HTML（供前端解析 href）
+        // 生成目录索引 HTML
         let html = `<html><body><h1>Index of /audio/</h1><ul>`;
         files.forEach(fileName => {
-            // 直接使用 JSON 中的文件名生成链接
-            html += `<li><a href="${fileName}">${fileName}</a></li>`;
+            html += `<li><a href="audio/${fileName}">${fileName}</a></li>`;
         });
         html += `</ul></body></html>`;
 
