@@ -2780,9 +2780,11 @@ async function handleRequest(request, env) {
 
     const requestUrl = new URL(request.url);
     const path = requestUrl.pathname;
-
-        // 1. 优先尝试访问静态文件（如 /audio/voice1.mp3）
+    
+    // 1. 优先尝试访问静态文件（如 /audio/voice1.mp3）
     const staticResponse = await env.ASSETS.fetch(request);
+
+
     if (staticResponse.ok) {
       // 添加跨域头（根据需求调整）
       const headers = new Headers(staticResponse.headers);
