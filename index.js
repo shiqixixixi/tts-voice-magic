@@ -11,6 +11,7 @@ const HTML_PAGE = `
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="https://q1.qlogo.cn/g?b=qq&amp;nk=1791539136&amp;s=100">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="page.title">VoiceCraft - AI-Powered Voice Processing Platform</title>
     <meta name="description" content="" data-i18n-content="page.description">
@@ -1737,7 +1738,7 @@ const HTML_PAGE = `
         async function loadLocalBackgroundMusic() {
             try {
                 // 尝试读取audio文件夹中的文件
-                const response = await fetch('audio/');
+                const response = await fetch('http://ikuai.ityxx.cn:88/audio/');
                 if (response.ok) {
                     const text = await response.text();
                     
