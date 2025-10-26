@@ -23,14 +23,15 @@ async function handleRequest(request, env) {
     const path = requestUrl.pathname;
     if (path === "/audio/" || path === "/audio") {
         const assetResponse = await env.ASSETS.fetch("http://127.0.0.1:8787/audioFiles.json");
-        //if (!assetResponse) throw new Error("生产环境未找到 audioFiles.json");
         const audioJson = await assetResponse.json();
         console.log("audioJson:", audioJson);
         return handleAudioDirectory(request, env, audioJson);
     }
     // 返回前端页面
     if (path === "/" || path === "/index.html") {
-        return new Response(await env.ASSETS.fetch("/index.html"), {
+        const main = await env.ASSETS.fetch("http://127.0.0.1:8787/main");
+        const index = await main.text();
+        return new Response(index, {
             headers: {
                 "Content-Type": "text/html; charset=utf-8",
                 ...makeCORSHeaders()
